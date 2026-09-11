@@ -1,0 +1,70 @@
+{
+  "name": "@orkid-labs/sdk",
+  "version": "0.1.2",
+  "description": "TypeScript SDK for the Orkid gasless swap API",
+  "license": "MIT",
+  "main": "dist/index.js",
+  "module": "dist/index.mjs",
+  "types": "dist/index.d.ts",
+  "bin": {
+    "orkid": "dist/cli.js"
+  },
+  "engines": {
+    "node": ">=18"
+  },
+  "files": [
+    "dist",
+    "README.md",
+    "openapi.yaml"
+  ],
+  "scripts": {
+    "build": "tsup src/index.ts src/cli.ts --format cjs,esm --dts",
+    "typecheck": "tsc --noEmit",
+    "lint": "tsc --noEmit",
+    "prepare": "npm run build",
+    "test": "vitest run",
+    "test:watch": "vitest",
+    "test:e2e": "ORKID_E2E=1 vitest run tests/e2e"
+  },
+  "keywords": [
+    "orkid",
+    "swap",
+    "gasless",
+    "permit2",
+    "base",
+    "ethereum",
+    "arbitrum",
+    "polygon",
+    "defi",
+    "tycho"
+  ],
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/orkid-labs/orkid-sdk.git",
+    "directory": "orkid-sdk"
+  },
+  "homepage": "https://docs.orkidlabs.xyz",
+  "bugs": {
+    "url": "https://github.com/orkid-labs/orkid-sdk/issues"
+  },
+  "peerDependencies": {
+    "ethers": "^6.0.0",
+    "viem": "^2.0.0"
+  },
+  "peerDependenciesMeta": {
+    "viem": {
+      "optional": true
+    },
+    "ethers": {
+      "optional": true
+    }
+  },
+  "devDependencies": {
+    "@types/node": "^20.0.0",
+    "ethers": "^6.13.0",
+    "tsup": "^8.0.0",
+    "typescript": "^5.3.0",
+    "viem": "^2.41.0",
+    "vitest": "^2.1.9"
+  }
+}

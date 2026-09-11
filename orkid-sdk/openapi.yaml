@@ -1,0 +1,522 @@
+openapi: 3.0.3
+info:
+  title: Orkid Swap API
+  description: Gasless, same-chain token swaps with competitive Orkid fee (contact us for pricing).
+  version: '1.0.0'
+  contact:
+    email: api@orkidlabs.com
+servers:
+  - url: https://orkidlabs.xyz
+    description: Production
+  - url: https://orkid-67sli2v23-orkidlabs.vercel.app
+    description: Staging
+paths:
+  /api/v1/route:
+    post:
+      summary: Get an executable swap quote
+      operationId: getQuote
+      security:
+        - ApiKeyAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/RouteRequest'
+      responses:
+        '200':
+          description: Quote or error envelope
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/OrkidResponse'
+  /api/v1/solve:
+    post:
+      summary: Execute a gasless swap (or dry-run)
+      operationId: solveSwap
+      security:
+        - ApiKeyAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/SolveRequest'
+      responses:
+        '200':
+          description: Solved transaction, dry-run calldata, or error envelope
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/OrkidResponse'
+  /api/v1/tokens:
+    get:
+      summary: Search tokens for a chain
+      operationId: listTokens
+      security:
+        - ApiKeyAuth: []
+      parameters:
+        - name: chain
+          in: query
+          required: true
+          schema:
+            type: string
+            example: base
+        - name: search
+          in: query
+          schema:
+            type: string
+        - name: limit
+          in: query
+          schema:
+            type: integer
+            example: 50
+      responses:
+        '200':
+          description: Token list
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  ok:
+                    type: boolean
+                  tokens:
+                    type: array
+                    items:
+                      $ref: '#/components/schemas/Token'
+                  error:
+                    type: string
+  /api/v1/account:
+    get:
+      summary: Get the partner account for this API key
+      operationId: getAccount
+      security:
+        - ApiKeyAuth: []
+      responses:
+        '200':
+          description: Partner account record
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  ok:
+                    type: boolean
+                  account:
+                    $ref: '#/components/schemas/Account'
+                  error:
+                    type: string
+        '401':
+          description: Invalid or revoked API key
+        '403':
+          description: API key not associated with an account
+  /api/v1/usage:
+    get:
+      summary: List usage events for this API key's account
+      operationId: getUsage
+      security:
+        - ApiKeyAuth: []
+      parameters:
+        - name: period
+          in: query
+          description: Month filter in YYYY-MM format (UTC)
+          schema:
+            type: string
+            example: '2026-09'
+        - name: event_type
+          in: query
+          schema:
+            type: string
+            enum: [route, solve]
+        - name: limit
+          in: query
+          schema:
+            type: integer
+            default: 100
+      responses:
+        '200':
+          description: Usage events with totals
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  ok:
+                    type: boolean
+                  events:
+                    type: array
+                    items:
+                      $ref: '#/components/schemas/UsageEvent'
+                  total_volume_usd:
+                    type: number
+                  total_savings_usd:
+                    type: number
+                  error:
+                    type: string
+        '401':
+          description: Invalid or revoked API key
+        '403':
+          description: API key not associated with an account
+  /api/v1/rebates:
+    get:
+      summary: List rebate ledger entries for this API key's account
+      operationId: getRebates
+      security:
+        - ApiKeyAuth: []
+      parameters:
+        - name: period
+          in: query
+          description: Month filter in YYYY-MM format (UTC)
+          schema:
+            type: string
+            example: '2026-09'
+      responses:
+        '200':
+          description: Rebate ledger rows, most recent first
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  ok:
+                    type: boolean
+                  rebates:
+                    type: array
+                    items:
+                      $ref: '#/components/schemas/Rebate'
+                  error:
+                    type: string
+        '401':
+          description: Invalid or revoked API key
+        '403':
+          description: API key not associated with an account
+  /api/v1/confirm:
+    post:
+      summary: Confirm a user-submitted swap transaction
+      description: >-
+        For user-pays-gas swaps (e.g. below the gasless notional floor,
+        `gaslessEligible: false`), call this after the user's transaction is
+        mined. The API verifies the tx on-chain — receipt success, correct
+        TVMExecutor, and keccak256(tx.input) matching the encoded calldata —
+        then marks the usage event as a real solve so the volume counts
+        toward rebates.
+      operationId: confirmTransaction
+      security:
+        - ApiKeyAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [txHash]
+              properties:
+                txHash:
+                  type: string
+                  description: 32-byte transaction hash
+                chain:
+                  type: string
+                  description: Optional chain hint (default searches all supported chains)
+      responses:
+        '200':
+          description: Swap confirmed and counted
+        '202':
+          description: Transaction found but receipt not yet available — retry
+        '400':
+          description: Malformed txHash
+        '404':
+          description: Transaction not found on any supported chain
+        '422':
+          description: Tx reverted, wrong executor, or no matching encoded swap
+  /api/v1/handshake:
+    get:
+      summary: Anti-scrape token handshake
+      description: >-
+        Issues a fresh anti-scrape cookie (orkid_quote_token) bound to the
+        caller's IP. Used by anonymous browser clients to recover from a 403
+        'anti-scraping token' response — call this endpoint, then retry the
+        original request once. The SDK performs this recovery automatically.
+        Not needed for API-key requests.
+      tags: [meta]
+      responses:
+        '200':
+          description: Token issued via Set-Cookie
+        '403':
+          description: AI crawler blocked
+        '429':
+          description: Handshake rate limit (10/min per IP)
+        '503':
+          description: Token service unavailable (secret unset)
+components:
+  securitySchemes:
+    ApiKeyAuth:
+      type: apiKey
+      in: header
+      name: X-ORKID-API-Key
+  schemas:
+    RouteRequest:
+      type: object
+      required: [from, to, amount]
+      properties:
+        from:
+          type: string
+          description: Token symbol or address to sell
+          example: USDC
+        to:
+          type: string
+          description: Token symbol or address to buy
+          example: WETH
+        amount:
+          type: string
+          description: Human-readable amount to sell
+          example: '25.0'
+        chain:
+          type: string
+          default: base
+          example: base
+        fromAddress:
+          type: string
+          example: '0x833589fcd6edb6e08f4c7c32d4f71b54bda02913'
+        fromDecimals:
+          type: integer
+          example: 6
+        toAddress:
+          type: string
+          example: '0x4200000000000000000000000000000000000006'
+        toDecimals:
+          type: integer
+          example: 18
+    SolveRequest:
+      allOf:
+        - $ref: '#/components/schemas/RouteRequest'
+      type: object
+      required: [from, to, amount, user, fromAddress, fromDecimals, toAddress, toDecimals, permit, signature]
+      properties:
+        user:
+          type: string
+          example: '0xA7362d61c467328cb85c428c2a5D921DBB4e7f5b'
+        dryRun:
+          type: boolean
+          default: false
+        slippageBps:
+          type: number
+          default: 50
+        permit:
+          $ref: '#/components/schemas/Permit'
+        signature:
+          type: string
+          description: 65-byte hex signature of the EIP-712 PermitTransferFrom message
+          example: '0x...'
+    Permit:
+      type: object
+      required: [permitted, nonce, deadline]
+      properties:
+        permitted:
+          type: object
+          required: [token, amount]
+          properties:
+            token:
+              type: string
+            amount:
+              type: string
+        nonce:
+          type: string
+        deadline:
+          type: string
+    OrkidResponse:
+      type: object
+      required: [ok, computeMs]
+      properties:
+        ok:
+          type: boolean
+        quote:
+          $ref: '#/components/schemas/Quote'
+        transaction:
+          $ref: '#/components/schemas/Transaction'
+        savings:
+          $ref: '#/components/schemas/Savings'
+        error:
+          type: string
+        computeMs:
+          type: integer
+    Quote:
+      type: object
+      required: [amountIn, amountOut, amountOutRaw, volumeUsd, rate, protocol]
+      properties:
+        amountIn:
+          type: string
+        amountOut:
+          type: string
+        amountOutRaw:
+          type: string
+        volumeUsd:
+          type: number
+        rate:
+          type: string
+        protocol:
+          type: string
+        poolAddress:
+          type: string
+        priceImpactBps:
+          type: number
+    Transaction:
+      type: object
+      required: [to, data, value, chain]
+      properties:
+        txHash:
+          type: string
+        to:
+          type: string
+        data:
+          type: string
+        value:
+          type: string
+        chain:
+          type: string
+    Savings:
+      type: object
+      required: [orkidBps, metamaskBps, savingsBps, savingsUsd, volumeUsd, savingsMultiplier]
+      properties:
+        orkidBps:
+          type: number
+        metamaskBps:
+          type: number
+        savingsBps:
+          type: number
+        savingsUsd:
+          type: number
+        volumeUsd:
+          type: number
+        savingsMultiplier:
+          type: string
+    Token:
+      type: object
+      required: [address, symbol, decimals, chain]
+      properties:
+        address:
+          type: string
+        symbol:
+          type: string
+        decimals:
+          type: integer
+        chain:
+          type: string
+    Account:
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+        slug:
+          type: string
+        name:
+          type: string
+        contact_email:
+          type: string
+        rebate_bps:
+          type: number
+          description: Rebate rate in basis points (e.g. 3 = 0.03%)
+        rebate_active:
+          type: boolean
+        notes:
+          type: string
+        created_at:
+          type: string
+          format: date-time
+        updated_at:
+          type: string
+          format: date-time
+    UsageEvent:
+      type: object
+      properties:
+        id:
+          type: integer
+        account_id:
+          type: string
+          format: uuid
+        api_key_id:
+          type: string
+          format: uuid
+        event_type:
+          type: string
+          enum: [route, solve]
+        chain:
+          type: string
+        token_in:
+          type: string
+        token_out:
+          type: string
+        amount_in_raw:
+          type: string
+        amount_out_raw:
+          type: string
+        volume_usd:
+          type: number
+        savings_usd:
+          type: number
+        fee_bps:
+          type: number
+        tx_hash:
+          type: string
+        request_ip:
+          type: string
+        is_dry_run:
+          type: boolean
+          description: Dry-run solves are excluded from rebate volume
+        is_test:
+          type: boolean
+          description: >-
+            Operator-marked test traffic — excluded from rebateable volume.
+            Set server-side by Orkid; cannot be requested by API clients.
+        metadata:
+          type: object
+        created_at:
+          type: string
+          format: date-time
+    Rebate:
+      type: object
+      properties:
+        id:
+          type: integer
+        account_id:
+          type: string
+          format: uuid
+        period:
+          type: string
+          enum: [tx, daily, weekly, monthly, quarterly, annual]
+          description: Rebate frequency (the month is in period_start)
+        period_start:
+          type: string
+          format: date-time
+          description: UTC start of the rebate period
+        volume_usd:
+          type: number
+        rebate_bps:
+          type: number
+        rebate_usd:
+          type: number
+        kind:
+          type: string
+          enum: [volume, referral]
+          default: volume
+          description: >-
+            'volume' = rebate on the account's own swap volume;
+            'referral' = income paid to this account for a referred partner's
+            volume (see source_account_id).
+        source_account_id:
+          type: string
+          format: uuid
+          nullable: true
+          description: For kind='referral', the referred account whose volume generated this row
+        status:
+          type: string
+          enum: [accrued, paid, voided]
+        settled_at:
+          type: string
+          format: date-time
+        settlement_tx_hash:
+          type: string
+        created_at:
+          type: string
+          format: date-time
