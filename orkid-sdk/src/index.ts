@@ -53,9 +53,7 @@ export {
   normalizeChainName,
 } from './chains'
 
-// Optional wallet-specific helpers. These re-export types and throw at runtime
-// if the required dependency is not installed.
-export { OrkidViemPermitSigner } from './viem'
-export type { OrkidSignSwapParams } from './viem'
-
-export { OrkidEthersPermitSigner } from './ethers'
+// Optional wallet-specific signers live in subpath exports so the core
+// stays dependency-free:
+//   import { OrkidViemPermitSigner } from '@orkid-labs/sdk/viem'
+//   import { OrkidEthersPermitSigner } from '@orkid-labs/sdk/ethers'

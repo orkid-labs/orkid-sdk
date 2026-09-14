@@ -35,6 +35,10 @@ export interface OrkidQuote {
   poolAddress?: string
   /** Estimated price impact in basis points */
   priceImpactBps?: number
+  /** Estimated gas cost of the route in USD */
+  gasUsd?: number
+  /** Estimated gas units consumed by the route */
+  gasUnits?: number
 }
 
 export interface OrkidSavings {

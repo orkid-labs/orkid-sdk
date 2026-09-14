@@ -360,6 +360,12 @@ components:
           type: string
         priceImpactBps:
           type: number
+        gasUsd:
+          type: number
+          description: Estimated gas cost of the route in USD
+        gasUnits:
+          type: number
+          description: Estimated gas units consumed by the route
     Transaction:
       type: object
       required: [to, data, value, chain]

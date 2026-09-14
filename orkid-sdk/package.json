@@ -1,6 +1,6 @@
 {
   "name": "@orkid-labs/sdk",
-  "version": "0.1.2",
+  "version": "0.2.0",
   "description": "TypeScript SDK for the Orkid gasless swap API",
   "license": "MIT",
   "main": "dist/index.js",
@@ -18,7 +18,7 @@
     "openapi.yaml"
   ],
   "scripts": {
-    "build": "tsup src/index.ts src/cli.ts --format cjs,esm --dts",
+    "build": "tsup src/index.ts src/ethers.ts src/viem.ts src/cli.ts --format cjs,esm --dts",
     "typecheck": "tsc --noEmit",
     "lint": "tsc --noEmit",
     "prepare": "npm run build",
@@ -66,5 +66,37 @@
     "typescript": "^5.3.0",
     "viem": "^2.41.0",
     "vitest": "^2.1.9"
+  },
+  "exports": {
+    ".": {
+      "import": {
+        "types": "./dist/index.d.mts",
+        "default": "./dist/index.mjs"
+      },
+      "require": {
+        "types": "./dist/index.d.ts",
+        "default": "./dist/index.js"
+      }
+    },
+    "./ethers": {
+      "import": {
+        "types": "./dist/ethers.d.mts",
+        "default": "./dist/ethers.mjs"
+      },
+      "require": {
+        "types": "./dist/ethers.d.ts",
+        "default": "./dist/ethers.js"
+      }
+    },
+    "./viem": {
+      "import": {
+        "types": "./dist/viem.d.mts",
+        "default": "./dist/viem.mjs"
+      },
+      "require": {
+        "types": "./dist/viem.d.ts",
+        "default": "./dist/viem.js"
+      }
+    }
   }
 }

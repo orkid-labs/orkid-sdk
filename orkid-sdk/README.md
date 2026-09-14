@@ -452,7 +452,8 @@ npm install ethers
 ### Quick start — production
 
 ```typescript
-import { OrkidClient, OrkidPermitSigner } from '@orkid-labs/sdk'
+import { OrkidClient } from '@orkid-labs/sdk'
+import { OrkidViemPermitSigner } from '@orkid-labs/sdk/viem'
 import { createWalletClient, http } from 'viem'
 import { base } from 'viem/chains'
 import { privateKeyToAccount } from 'viem/accounts'
@@ -465,7 +466,7 @@ const client = new OrkidClient({
 const account = privateKeyToAccount('0x...')
 const walletClient = createWalletClient({ account, chain: base, transport: http() })
 
-const permitSigner = new OrkidPermitSigner(walletClient)
+const permitSigner = new OrkidViemPermitSigner(walletClient)
 
 async function swapUsdcToWeth() {
   const quote = await client.getQuote({
@@ -507,7 +508,7 @@ async function swapUsdcToWeth() {
 ### Quick start — sandbox
 
 ```typescript
-import { OrkidClient, OrkidPermitSigner, SANDBOX_BASE_URL } from '@orkid-labs/sdk'
+import { OrkidClient, SANDBOX_BASE_URL } from '@orkid-labs/sdk'
 
 const sandbox = new OrkidClient({
   apiKey: process.env.ORKID_SANDBOX_KEY!,
@@ -529,7 +530,7 @@ const quote = await sandbox.getQuote({
 | --- | --- |
 | `OrkidClient` | Main API client — `getQuote`, `solve`, `confirmTransaction`, `getAccount`, `getUsage`, `getRebates` |
 | `SANDBOX_BASE_URL` | `'https://sandbox.orkidlabs.com'` — pass as `baseUrl` for the sandbox |
-| `OrkidPermitSigner` | Permit2 signing helper (viem and ethers variants) |
+| `OrkidViemPermitSigner` (`@orkid-labs/sdk/viem`), `OrkidEthersPermitSigner` (`@orkid-labs/sdk/ethers`) | Permit2 signing helpers — optional subpath exports; require `viem` or `ethers` installed |
 | `ORKID_CHAIN_CONFIG` | Per-chain metadata (TVMExecutor, Permit2, RPC, explorer, min notional) |
 | `PERMIT2` | Canonical Permit2 address: `0x000000000022D473030F116dDEE9F6B43aC78BA3` |
 
