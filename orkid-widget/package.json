@@ -1,7 +1,7 @@
 {
   "name": "@orkid-labs/widget",
-  "version": "0.1.2",
-  "description": "White-label React swap widget for the Orkid gasless swap API",
+  "version": "0.3.1",
+  "description": "White-label React swap widget for the Orkid gasless swap API \u2014 embed MEV-protected DEX aggregation and Permit2 gasless token swaps in any React app",
   "license": "MIT",
   "main": "dist/index.js",
   "module": "dist/index.mjs",
@@ -23,15 +23,26 @@
   "keywords": [
     "orkid",
     "swap",
+    "token-swap",
+    "crypto-swap",
     "widget",
+    "react",
+    "react-component",
+    "swap-widget",
+    "dex",
+    "dex-aggregator",
     "gasless",
     "permit2",
-    "react",
+    "mev",
+    "mev-protection",
     "base",
     "ethereum",
     "arbitrum",
     "polygon",
-    "defi"
+    "defi",
+    "white-label",
+    "embeddable",
+    "web3"
   ],
   "repository": {
     "type": "git",
